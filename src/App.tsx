@@ -1,35 +1,74 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { GoogleMap, Libraries, LoadScript } from "@react-google-maps/api";
+import { useCallback, useState } from "react";
+
+const libraries: Libraries = ["places"];
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+
+  const containerStyle = {
+    width: "80vw",
+    height: "80vh",
+  };
+
+  // Lille
+  const center = {
+    lat: 50.633333,
+    lng: 3.066667,
+  };
+
+  const searchRestaurants = async (
+    restaurantCategory: string,
+    city: string
+  ) => {
+    if (!map) {
+      throw new Error("map is null");
+    }
+
+    const service = new google.maps.places.PlacesService(map);
+    const request = {
+      query: `${restaurantCategory} restaurants in ${city}`,
+      fields: ["name", "geometry", "place_id"],
+    };
+
+    service.textSearch(request, (results, status) => {
+      if (status === google.maps.places.PlacesServiceStatus.OK) {
+        // Process the results
+        console.log(results);
+      }
+    });
+  };
+
+  const onLoad = useCallback((map: google.maps.Map) => {
+    // This is just an example of getting and using the map instance!!! don't just blindly copy!
+    const bounds = new window.google.maps.LatLngBounds(center);
+    map.fitBounds(bounds);
+
+    setMap(map);
+  }, []);
+
+  const onUnmount = useCallback(() => {
+    setMap(null);
+  }, []);
 
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <LoadScript
+      loadingElement={<div>loading</div>}
+      googleMapsApiKey={import.meta.env.VITE_GOOGLE_API_KEY}
+      libraries={libraries}
+    >
+      <button onClick={() => searchRestaurants("pizza", "Lille")}>
+        Search Pizza
+      </button>
+      <GoogleMap
+        mapContainerStyle={containerStyle}
+        center={center}
+        zoom={0}
+        onLoad={onLoad}
+        onUnmount={onUnmount}
+      />
+    </LoadScript>
+  );
 }
 
-export default App
+export default App;
